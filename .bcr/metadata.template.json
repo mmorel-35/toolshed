@@ -1,5 +1,5 @@
 {
-  "homepage": "https://github.com/mmorel-35/toolshed",
+  "homepage": "https://github.com/envoyproxy/toolshed",
   "maintainers": [
     {
       "email": "ryan@synca.io",
@@ -9,7 +9,7 @@
     }
   ],
   "repository": [
-    "github:mmorel-35/toolshed"
+    "github:envoyproxy/toolshed"
   ],
   "versions": [],
   "yanked_versions": {}
