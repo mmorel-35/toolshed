@@ -1,4 +1,14 @@
-build_targets:
-  - "//..."
-test_targets:
-  - "//..."
+bcr_test_module:
+  module_path: "bazel"
+  matrix:
+    platform: ["debian11", "macos", "ubuntu2204", "windows"]
+    bazel: [6.x, 7.x, 8.x]
+  tasks:
+    run_tests:
+      name: "Run test module"
+      platform: ${{ platform }}
+      bazel: ${{ bazel }}
+      build_targets:
+        - "//..."
+      test_targets:
+        - "//..."

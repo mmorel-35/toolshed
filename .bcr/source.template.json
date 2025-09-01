@@ -1,5 +1,5 @@
 {
   "integrity": "",
-  "strip_prefix": "{TAG}/bazel",
+  "strip_prefix": "toolshed-{VERSION}",
   "url": "https://github.com/{OWNER}/{REPO}/archive/refs/tags/{TAG}.tar.gz"
 }
