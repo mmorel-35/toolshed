@@ -1,0 +1,102 @@
+name: Publish to BCR
+
+on:
+  release:
+    types:
+    - released
+
+permissions:
+  contents: read
+
+jobs:
+  publish_to_bcr:
+    if: >-
+      github.event_name == 'release' &&
+      startsWith(github.event.release.name, 'bazel-')
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+    - name: Extract version from tag
+      id: version
+      run: |
+        # Extract version from tag, removing bazel- prefix
+        TAG_NAME="${{ github.event.release.tag_name }}"
+        VERSION=${TAG_NAME#bazel-}
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+
+    - name: Calculate source archive hash
+      id: hash
+      run: |
+        # Download the source archive
+        ARCHIVE_URL="https://github.com/${{ github.repository }}/archive/${{ github.event.release.tag_name }}.tar.gz"
+        curl -L -o source.tar.gz "$ARCHIVE_URL"
+
+        # Calculate SHA256
+        SHA256=$(sha256sum source.tar.gz | cut -d' ' -f1)
+        echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+        echo "archive_url=${ARCHIVE_URL}" >> $GITHUB_OUTPUT
+
+        # Calculate strip_prefix
+        STRIP_PREFIX="toolshed-${{ steps.version.outputs.version }}"
+        echo "strip_prefix=${STRIP_PREFIX}" >> $GITHUB_OUTPUT
+
+    - name: Update MODULE.bazel with version
+      run: |
+        # Update the version in MODULE.bazel for BCR publishing
+        VERSION="${{ steps.version.outputs.version }}"
+        sed -i "s/version = \"\"/version = \"${VERSION}\"/" \
+          bazel/MODULE.bazel
+
+    - name: Create BCR submission files
+      run: |
+        # Create the BCR submission directory structure
+        mkdir -p bcr-submission/modules/envoy_toolshed/${{ steps.version.outputs.version }}
+
+        # Copy MODULE.bazel to submission
+        cp bazel/MODULE.bazel bcr-submission/modules/envoy_toolshed/${{ steps.version.outputs.version }}/MODULE.bazel
+
+        # Create source.json with actual values
+        cat > bcr-submission/modules/envoy_toolshed/${{ steps.version.outputs.version }}/source.json << EOF
+        {
+          "integrity": "sha256-${{ steps.hash.outputs.sha256 }}",
+          "strip_prefix": "${{ steps.hash.outputs.strip_prefix }}",
+          "url": "${{ steps.hash.outputs.archive_url }}"
+        }
+        EOF
+
+        # Copy presubmit.yml
+        cp .bcr/presubmit.yml bcr-submission/modules/envoy_toolshed/${{ steps.version.outputs.version }}/presubmit.yml
+
+    - name: Submit to BCR
+      uses: bazel-contrib/setup-bazel@b388b84bb637e50cdae241d0f255670d4bd79f29
+
+    - name: Create BCR Pull Request
+      env:
+        GITHUB_TOKEN: ${{ secrets.BCR_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+      run: |
+        # This step would typically create a PR to the BCR repository
+        # For now, we'll output the submission details for manual processing
+        echo "BCR submission prepared for envoy_toolshed version ${{ steps.version.outputs.version }}"
+        echo "Files created in bcr-submission/"
+        find bcr-submission -type f -exec echo "File: {}" \; -exec cat {} \; -exec echo "" \;
+
+        # In a real setup, this would:
+        # 1. Clone the BCR repository
+        # 2. Create a branch with the new module version
+        # 3. Copy the files to the appropriate location
+        # 4. Create a pull request
+
+        echo "To complete BCR publishing:"
+        echo "1. Manually create a PR to https://github.com/bazelbuild/bazel-central-registry"
+        echo "2. Add the files from bcr-submission/ to modules/envoy_toolshed/${{ steps.version.outputs.version }}/"
+        echo "3. Update .bcr/metadata.json to include version ${{ steps.version.outputs.version }}"
+
+    - name: Upload BCR submission as artifact
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+      with:
+        name: bcr-submission-${{ steps.version.outputs.version }}
+        path: bcr-submission/
+        retention-days: 30

@@ -1,0 +1,4 @@
+build_targets:
+  - "//..."
+test_targets:
+  - "//..."
