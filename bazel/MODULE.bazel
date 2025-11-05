@@ -14,7 +14,22 @@ bazel_lib_toolchains.jq()
 use_repo(bazel_lib_toolchains, "jq_toolchains")
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
-python.toolchain(python_version = "3.12")
+python.toolchain(
+    python_version = "3.9",
+)
+python.toolchain(
+    python_version = "3.10",
+)
+python.toolchain(
+    python_version = "3.11",
+)
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
+python.toolchain(
+    python_version = "3.13",
+)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(
