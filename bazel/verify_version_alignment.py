@@ -12,7 +12,7 @@ from pathlib import Path
 
 def parse_module_bazel(file_path):
     """Parse bazel_dep declarations from MODULE.bazel."""
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
     deps = {}
@@ -34,7 +34,7 @@ def parse_module_bazel(file_path):
 
 def parse_versions_bzl(file_path):
     """Parse version definitions from versions.bzl."""
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
     # Extract Python version
@@ -42,6 +42,9 @@ def parse_versions_bzl(file_path):
     python_version = python_match.group(1) if python_match else None
     
     # Parse rule dependencies
+    # Note: This regex extracts version info from versions.bzl dictionary entries.
+    # It matches patterns like: "rules_python": { ... "version": "1.4.1", ... }
+    # The regex is intentionally permissive to handle various formatting in versions.bzl
     deps = {}
     
     # Match entries like: "rules_python": { ... "version": "1.4.1", ... }
@@ -52,7 +55,9 @@ def parse_versions_bzl(file_path):
     ):
         name = match.group(1)
         version = match.group(2)
-        # Filter for rule dependencies (they typically start with rules_ or have specific prefixes)
+        # Filter for rule dependencies based on common naming conventions
+        # These prefixes are standard for Bazel external dependencies
+        # If new dependency types are added, update this list accordingly
         if any(name.startswith(prefix) for prefix in ['rules_', 'aspect_', 'bazel_', 'toolchains_']):
             deps[name] = version
     
