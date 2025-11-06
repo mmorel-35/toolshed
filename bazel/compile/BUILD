@@ -4,14 +4,21 @@ load("//:versions.bzl", "VERSIONS")
 package(default_visibility = ["//visibility:public"])
 
 SANITIZER_ENV = {
+    "CC": "/usr/local/bin/clang-wrapper",
+    "CXX": "/usr/local/bin/clang++-wrapper",
+    "CFLAGS": "",
     "CXXFLAGS": "-nostdinc++ -nostdlib++",
-    "LDFLAGS": "-nostdlib++",
+    "LDFLAGS": "-nostdlib++ -fuse-ld=lld",
 }
 
 BASE_CMAKE_CACHE = {
     "CMAKE_BUILD_TYPE": "RelWithDebInfo",
     "CMAKE_INSTALL_PREFIX": ".",
     "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+    "CMAKE_C_COMPILER": "/usr/local/bin/clang-wrapper",
+    "CMAKE_CXX_COMPILER": "/usr/local/bin/clang++-wrapper",
+    "CMAKE_C_FLAGS": "",
+    "CMAKE_CXX_FLAGS": "",
     "LLVM_ENABLE_RUNTIMES": "libcxxabi;libcxx;libunwind",
     "LLVM_USE_LINKER": "lld",
     "CMAKE_SHARED_LINKER_FLAGS": "-shared -Wl,-S -fuse-ld=lld",
@@ -39,6 +46,7 @@ cmake(
     ],
     tags = ["manual"],
     working_directory = "runtimes",
+    toolchains = [],
 )
 
 cmake(
@@ -54,6 +62,7 @@ cmake(
     ],
     tags = ["manual"],
     working_directory = "runtimes",
+    toolchains = [],
 )
 
 genrule(
