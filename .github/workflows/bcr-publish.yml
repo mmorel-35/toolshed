@@ -1,0 +1,232 @@
+name: Publish to BCR
+
+on:
+  release:
+    types: [released]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  publish:
+    if: startsWith(github.event.release.tag_name, 'bazel-v')
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY_BRANCH: main
+      REGISTRY: bazelbuild/bazel-central-registry
+      REGISTRY_FORK: mmorel-35/bazel-central-registry
+      TAG_NAME: ${{ github.event.release.tag_name }}
+    steps:
+    - name: Checkout the module repository
+      uses: actions/checkout@v4.2.2
+      with:
+        ref: ${{ github.event.release.tag_name }}
+        path: this
+        persist-credentials: false
+
+    - name: Checkout BCR
+      uses: actions/checkout@v4.2.2
+      with:
+        repository: ${{ env.REGISTRY }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        path: bazel-central-registry
+        persist-credentials: false
+
+    # Get version from the tag, stripping bazel-v prefix
+    - name: Write release version
+      env:
+        TAG: ${{ github.event.release.tag_name }}
+      run: |
+        VERSION=${TAG#bazel-v}
+        echo Version: $VERSION
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+    # Remove any pre-existing attestations.template.json files so that the following (dummy) entry
+    # creation for generating attestations will succeed without trying to substitute and verify
+    # existing attestations. Any existing templates will be restored when the final entry is created.
+    - name: Remove attestations.template.json
+      working-directory: this/.bcr
+      run: find . -type f -name 'attestations.template.json' -delete
+
+    # Create an initial entry so that we can attest the generated source.json and MODULE.bazel
+    # files. These are needed to solve a chicken and egg problem where the attestations are referenced
+    # by attestations.template.json entry file, which is included in the entry published later on.
+    # This entry will be discarded.
+    - name: Create entry
+      id: create-entry
+      uses: bazel-contrib/publish-to-bcr@v6.2.0
+      with:
+        attest: true
+        attestations-dest: attestations
+        tag: ${{ github.event.release.tag_name }}
+        module-version: ${{ env.VERSION }}
+        local-registry: bazel-central-registry
+        templates-dir: this/.bcr
+
+    # Upload the attestations to the release. This will override attestations that
+    # were already uploaded on a previous run.
+    - name: Upload attestations to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: attestations/*
+        tag_name: ${{ github.event.release.tag_name }}
+
+    # Publish to BCR can run substitutions on an attestations.template.json file. Add a default
+    # template here rather than requiring users to add one the module repo's .bcr templates folder.
+    - name: Create attestations template
+      working-directory: this/.bcr
+      run: |
+        # Determine whether this is a multi-module repo because it affects the names of the
+        # uploaded attestaton files.
+        if [ -f "config.yml" ]; then
+            readarray -t MODULE_ROOTS < <(cat "config.yml" | yq --unwrapScalar '.moduleRoots.[] // "."')
+        elif [ -f "config.yaml" ]; then
+            readarray -t MODULE_ROOTS < <(cat "config.yaml" | yq --unwrapScalar '.moduleRoots.[] // "."')
+        else
+            MODULE_ROOTS=(".")
+        fi
+
+        # Read comma-delimited module names into an array
+        IFS=',' read -r -a MODULE_NAMES <<< "${{ steps.create-entry.outputs.module-names }}"
+
+        for i in "${!MODULE_ROOTS[@]}"; do
+            MODULE_ROOT="${MODULE_ROOTS[$i]}"
+            if [ ! -f "${MODULE_ROOT}/attestations.template.json" ]; then
+                # Multi-module repos upload attestations with the module name as a prefix
+                if [ "${#MODULE_ROOTS[@]}" -gt "1" ]; then
+                  PREFIX="${MODULE_NAMES[$i]}."
+                else
+                  PREFIX=""
+                fi
+                RELEASE_ARCHIVE_URL=$(cat "${MODULE_ROOT}/source.template.json" | jq --raw-output '.url')
+                cat <<EOF >"${MODULE_ROOT}/attestations.template.json"
+        {
+            "mediaType": "application/vnd.build.bazel.registry.attestation+json;version=1.0.0",
+            "attestations": {
+                "source.json": {
+                    "url": "https://github.com/{OWNER}/{REPO}/releases/download/{TAG}/${PREFIX}source.json.intoto.jsonl",
+                    "integrity": ""
+                },
+                "MODULE.bazel": {
+                    "url": "https://github.com/{OWNER}/{REPO}/releases/download/{TAG}/${PREFIX}MODULE.bazel.intoto.jsonl",
+                    "integrity": ""
+                },
+                "$(basename ${RELEASE_ARCHIVE_URL})": {
+                    "url": "${RELEASE_ARCHIVE_URL}.intoto.jsonl",
+                    "integrity": ""
+                }
+            }
+        }
+        EOF
+            fi
+        done
+
+    - name: Discard previous entry
+      working-directory: bazel-central-registry
+      run: |
+            git checkout -- ./
+            git clean -ffxd
+
+    - name: Create final entry
+      id: create-final-entry
+      uses: bazel-contrib/publish-to-bcr@v6.2.0
+      with:
+        tag: ${{ github.event.release.tag_name }}
+        module-version: ${{ env.VERSION }}
+        local-registry: bazel-central-registry
+        templates-dir: this/.bcr
+
+    - name: Push to fork
+      id: push-to-fork
+      working-directory: bazel-central-registry
+      env:
+        # Set the author to the actor of this workflow. Use the github-provided
+        # noreply email address: https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-email-preferences/setting-your-commit-email-address.
+        AUTHOR_NAME: ${{ github.actor }}
+        AUTHOR_EMAIL: ${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com
+        COMMITTER_NAME: "github-actions[bot]"
+        COMMITTER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+      run: |
+        set -o errexit -o nounset -o pipefail
+
+        # Use an authorized remote url to push to the fork
+        git remote add authed-fork https://x-access-token:${{ secrets.BCR_PUBLISH_TOKEN }}@github.com/${REGISTRY_FORK}.git
+
+        BRANCH="${{ steps.create-final-entry.outputs.module-names }}-${TAG_NAME}"
+        git checkout -b "${BRANCH}"
+        git add .
+        git -c "author.name=${AUTHOR_NAME}" \
+          -c "author.email=${AUTHOR_EMAIL}" \
+          -c "committer.name=${COMMITTER_NAME}" \
+          -c "committer.email=${COMMITTER_EMAIL}" \
+          commit \
+          -m "${{ steps.create-final-entry.outputs.short-description }}"
+        git push --force authed-fork "${BRANCH}"
+
+        echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+
+    - name: Prepare PR variables
+      id: pr-vars
+      run: |
+        set -o errexit -o nounset -o pipefail
+
+        TITLE="${{ steps.create-final-entry.outputs.short-description }}"
+        echo "title=${TITLE}" >> $GITHUB_OUTPUT
+
+        echo "body<<EOF" >> $GITHUB_OUTPUT
+        echo -e "Release: https://github.com/${{ github.repository }}/releases/tag/${TAG_NAME}\n" >> $GITHUB_OUTPUT
+        echo "_Automated by [Publish to BCR](https://github.com/bazel-contrib/publish-to-bcr)_" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Open pull request
+      working-directory: bazel-central-registry
+      run: |
+        set -o errexit -o nounset -o pipefail
+
+        FORK_OWNER="${REGISTRY_FORK%%/*}"
+        BRANCH="${{ steps.push-to-fork.outputs.branch }}"
+        MAINTAINER_CAN_MODIFY=true
+        DRAFT=true
+
+        REQUEST_BODY=$(jq --null-input \
+          --arg title "${{ steps.pr-vars.outputs.title }}" \
+          --arg body "${{ steps.pr-vars.outputs.body }}" \
+          --arg head "${FORK_OWNER}:${BRANCH}" \
+          --arg base ${REGISTRY_BRANCH} \
+          --argjson draft "${DRAFT}" \
+          --argjson maintainer_can_modify "${MAINTAINER_CAN_MODIFY}" \
+          '{title: $title, body: $body, head: $head, base: $base, maintainer_can_modify: $maintainer_can_modify, draft: $draft}')
+
+        # Make a request to the GitHub API directly rather than using the gh cli
+        # because authorizing with the cli using `gh auth login --with-token` requires
+        # additional permissions on the PAT.
+        # API docs: https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#create-a-pull-request
+        RESPONSE_BODY=$(mktemp)
+        RESPONSE_CODE=$(curl \
+          --location \
+          --silent \
+          --output "${RESPONSE_BODY}" \
+          --write-out "%{http_code}" \
+          --request POST \
+          --header "Accept: application/vnd.github+json" \
+          --header "Authorization: Bearer ${{ secrets.BCR_PUBLISH_TOKEN }}" \
+          --header "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/${REGISTRY}/pulls \
+          --data "${REQUEST_BODY}"
+        )
+
+        if [[ "${RESPONSE_CODE}" == 201 ]]; then
+          PULL_REQUEST_URL=$(jq --raw-output .html_url <"${RESPONSE_BODY}")
+          echo "Created pull request ${PULL_REQUEST_URL}"
+        elif [[ "${RESPONSE_CODE}" == 422 && "$(jq -r ".errors[0].message" <"${RESPONSE_BODY}")" == *"already exists"* ]]; then
+          echo "A pull request for branch ${BRANCH} on ${REGISTRY_FORK} already exists."
+        else
+          echo "Failed to create pull request; received status ${RESPONSE_CODE}"
+          cat "${RESPONSE_BODY}"
+          rm "${RESPONSE_BODY}"
+          exit 1
+        fi
+
+        rm "${RESPONSE_BODY}"

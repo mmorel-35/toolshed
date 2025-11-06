@@ -10,6 +10,18 @@ Python libraries, runners and checkers for Envoy proxy's CI
 
 <br clear="both" />
 
+### Bazel Central Registry (BCR) Publishing
+
+This repository is configured to automatically publish to the [Bazel Central Registry](https://github.com/bazelbuild/bazel-central-registry) when releases prefixed with `bazel-` are created.
+
+The BCR module is published as `envoy_toolshed` with **phlax** as the default maintainer. When a release is created:
+
+1. The GitHub workflow automatically prepares BCR submission files
+2. Source archives are validated and hashed
+3. Submission artifacts are created for manual PR creation to the BCR
+
+For more details, see [.bcr/README.md](.bcr/README.md).
+
 ### Packages
 
 
