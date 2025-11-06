@@ -3,12 +3,25 @@ load("//:versions.bzl", "VERSIONS")
 
 package(default_visibility = ["//visibility:public"])
 
+# Compiler wrappers for sanitizer builds
+#
+# When building LLVM runtimes with sanitizers, we need to use clang/clang++ instead
+# of the default GCC toolchain. However, rules_foreign_cc passes Bazel's C++ toolchain
+# flags to CMake, which include GCC-specific options that clang doesn't support
+# (e.g., -fno-canonical-system-headers, -pass-exit-codes).
+#
+# These wrapper scripts filter out incompatible flags before invoking clang.
+# They are installed to /usr/local/bin during CI builds.
+exports_files([
+    "clang-wrapper.sh",
+    "clangxx-wrapper.sh",
+])
+
 SANITIZER_ENV = {
     "CC": "/usr/local/bin/clang-wrapper",
     "CXX": "/usr/local/bin/clang++-wrapper",
-    "CFLAGS": "",
     "CXXFLAGS": "-nostdinc++ -nostdlib++",
-    "LDFLAGS": "-nostdlib++ -fuse-ld=lld",
+    "LDFLAGS": "-nostdlib++",
 }
 
 BASE_CMAKE_CACHE = {
@@ -17,8 +30,6 @@ BASE_CMAKE_CACHE = {
     "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
     "CMAKE_C_COMPILER": "/usr/local/bin/clang-wrapper",
     "CMAKE_CXX_COMPILER": "/usr/local/bin/clang++-wrapper",
-    "CMAKE_C_FLAGS": "",
-    "CMAKE_CXX_FLAGS": "",
     "LLVM_ENABLE_RUNTIMES": "libcxxabi;libcxx;libunwind",
     "LLVM_USE_LINKER": "lld",
     "CMAKE_SHARED_LINKER_FLAGS": "-shared -Wl,-S -fuse-ld=lld",
@@ -46,7 +57,7 @@ cmake(
     ],
     tags = ["manual"],
     working_directory = "runtimes",
-    toolchains = [],
+    toolchains = [],  # Disable Bazel's C++ toolchain to minimize flag injection
 )
 
 cmake(
@@ -62,7 +73,7 @@ cmake(
     ],
     tags = ["manual"],
     working_directory = "runtimes",
-    toolchains = [],
+    toolchains = [],  # Disable Bazel's C++ toolchain to minimize flag injection
 )
 
 genrule(
