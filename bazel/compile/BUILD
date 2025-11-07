@@ -55,6 +55,11 @@ BASE_CMAKE_CACHE = {
 SANITIZER_ENV = {
     "CC": "/usr/local/bin/clang-wrapper",
     "CXX": "/usr/local/bin/clang++-wrapper",
+    # When building libcxx with sanitizers, libcxxabi needs to compile against C++ headers.
+    # Without system headers, it fails with "no type named 'align_val_t' in namespace 'std'".
+    # We add GCC's libstdc++ headers via -isystem so libcxxabi can bootstrap itself.
+    # The final libcxx will still be self-contained with MSan/TSan instrumentation.
+    "CXXFLAGS": "-isystem /usr/include/c++/12 -isystem /usr/include/x86_64-linux-gnu/c++/12",
 }
 
 cmake(
