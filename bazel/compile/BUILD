@@ -12,6 +12,12 @@ package(default_visibility = ["//visibility:public"])
 #
 # These wrapper scripts filter out incompatible flags before invoking clang.
 # They are exported as filegroups so they can be used by consumers of this repository.
+#
+# Note: bazelrc configuration cannot solve this issue because:
+# - bazelrc only affects Bazel's own toolchain configuration
+# - rules_foreign_cc captures and passes through toolchain flags to CMake
+# - The flag injection happens at the rules_foreign_cc level, not configurable via bazelrc
+# - Wrappers are the most reliable way to filter flags at the compiler invocation level
 
 exports_files([
     "clang-wrapper.sh",
