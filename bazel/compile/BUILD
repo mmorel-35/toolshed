@@ -11,18 +11,20 @@ package(default_visibility = ["//visibility:public"])
 # (e.g., -fno-canonical-system-headers, -pass-exit-codes).
 #
 # These wrapper scripts filter out incompatible flags before invoking clang.
-# They are installed to /usr/local/bin during CI builds.
+# They are exported as filegroups so they can be used by consumers of this repository.
+
 exports_files([
     "clang-wrapper.sh",
     "clangxx-wrapper.sh",
 ])
 
-SANITIZER_ENV = {
-    "CC": "/usr/local/bin/clang-wrapper",
-    "CXX": "/usr/local/bin/clang++-wrapper",
-    "CXXFLAGS": "-nostdinc++ -nostdlib++",
-    "LDFLAGS": "-nostdlib++",
-}
+# Note: The cmake() rule below requires the wrapper scripts to be installed in the system PATH
+# or available via absolute paths. For local development and CI, these are installed to
+# /usr/local/bin/. For external consumers, they should install these wrappers or use
+# pre-built artifacts from releases.
+#
+# Alternative for external consumers: Use the pre-built sanitizer library artifacts
+# from GitHub releases instead of building from source.
 
 BASE_CMAKE_CACHE = {
     "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -42,6 +44,13 @@ BASE_CMAKE_CACHE = {
     "LIBCXXABI_ENABLE_STATIC": "ON",
     "LIBUNWIND_ENABLE_SHARED": "OFF",
     "LIBUNWIND_ENABLE_STATIC": "ON",
+}
+
+SANITIZER_ENV = {
+    "CC": "/usr/local/bin/clang-wrapper",
+    "CXX": "/usr/local/bin/clang++-wrapper",
+    "CXXFLAGS": "-nostdinc++ -nostdlib++",
+    "LDFLAGS": "-nostdlib++",
 }
 
 cmake(
