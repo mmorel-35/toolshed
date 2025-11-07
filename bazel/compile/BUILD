@@ -55,8 +55,6 @@ BASE_CMAKE_CACHE = {
 SANITIZER_ENV = {
     "CC": "/usr/local/bin/clang-wrapper",
     "CXX": "/usr/local/bin/clang++-wrapper",
-    "CXXFLAGS": "-nostdinc++ -nostdlib++",
-    "LDFLAGS": "-nostdlib++",
 }
 
 cmake(
