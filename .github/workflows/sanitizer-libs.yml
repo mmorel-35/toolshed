@@ -35,10 +35,18 @@ jobs:
     - uses: actions/checkout@v5
     - name: Setup Bazel
       uses: bazelbuild/setup-bazelisk@v3
-    - name: Install libtinfo
+    - name: Install dependencies
       run: |
         sudo apt-get -qq update
         sudo apt-get -qq install -y libtinfo5
+    - name: Setup compiler wrappers for sanitizer builds
+      run: |
+        # Install wrapper scripts that filter GCC-specific flags incompatible with clang
+        sudo cp bazel/compile/clang-wrapper.sh /usr/local/bin/clang-wrapper
+        sudo cp bazel/compile/clangxx-wrapper.sh /usr/local/bin/clang++-wrapper
+        sudo chmod +x /usr/local/bin/clang-wrapper /usr/local/bin/clang++-wrapper
+        # Create lld symlink for LLVM linker
+        sudo ln -sf /usr/bin/ld.lld-18 /usr/bin/lld
     - name: Build ${{ matrix.sanitizer }} libraries
       run: |
         cd bazel

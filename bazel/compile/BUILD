@@ -3,15 +3,41 @@ load("//:versions.bzl", "VERSIONS")
 
 package(default_visibility = ["//visibility:public"])
 
-SANITIZER_ENV = {
-    "CXXFLAGS": "-nostdinc++ -nostdlib++",
-    "LDFLAGS": "-nostdlib++",
-}
+# Compiler wrappers for sanitizer builds
+#
+# When building LLVM runtimes with sanitizers, we need to use clang/clang++ instead
+# of the default GCC toolchain. However, rules_foreign_cc passes Bazel's C++ toolchain
+# flags to CMake, which include GCC-specific options that clang doesn't support
+# (e.g., -fno-canonical-system-headers, -pass-exit-codes).
+#
+# These wrapper scripts filter out incompatible flags before invoking clang.
+# They are exported as filegroups so they can be used by consumers of this repository.
+#
+# Note: bazelrc configuration cannot solve this issue because:
+# - bazelrc only affects Bazel's own toolchain configuration
+# - rules_foreign_cc captures and passes through toolchain flags to CMake
+# - The flag injection happens at the rules_foreign_cc level, not configurable via bazelrc
+# - Wrappers are the most reliable way to filter flags at the compiler invocation level
+
+exports_files([
+    "clang-wrapper.sh",
+    "clangxx-wrapper.sh",
+])
+
+# Note: The cmake() rule below requires the wrapper scripts to be installed in the system PATH
+# or available via absolute paths. For local development and CI, these are installed to
+# /usr/local/bin/. For external consumers, they should install these wrappers or use
+# pre-built artifacts from releases.
+#
+# Alternative for external consumers: Use the pre-built sanitizer library artifacts
+# from GitHub releases instead of building from source.
 
 BASE_CMAKE_CACHE = {
     "CMAKE_BUILD_TYPE": "RelWithDebInfo",
     "CMAKE_INSTALL_PREFIX": ".",
     "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+    "CMAKE_C_COMPILER": "/usr/local/bin/clang-wrapper",
+    "CMAKE_CXX_COMPILER": "/usr/local/bin/clang++-wrapper",
     "LLVM_ENABLE_RUNTIMES": "libcxxabi;libcxx;libunwind",
     "LLVM_USE_LINKER": "lld",
     "CMAKE_SHARED_LINKER_FLAGS": "-shared -Wl,-S -fuse-ld=lld",
@@ -24,6 +50,16 @@ BASE_CMAKE_CACHE = {
     "LIBCXXABI_ENABLE_STATIC": "ON",
     "LIBUNWIND_ENABLE_SHARED": "OFF",
     "LIBUNWIND_ENABLE_STATIC": "ON",
+}
+
+SANITIZER_ENV = {
+    "CC": "/usr/local/bin/clang-wrapper",
+    "CXX": "/usr/local/bin/clang++-wrapper",
+    # When building libcxx with sanitizers, libcxxabi needs to compile against C++ headers.
+    # Without system headers, it fails with "no type named 'align_val_t' in namespace 'std'".
+    # We add GCC's libstdc++ headers via -isystem so libcxxabi can bootstrap itself.
+    # The final libcxx will still be self-contained with MSan/TSan instrumentation.
+    "CXXFLAGS": "-isystem /usr/include/c++/12 -isystem /usr/include/x86_64-linux-gnu/c++/12",
 }
 
 cmake(
@@ -39,6 +75,7 @@ cmake(
     ],
     tags = ["manual"],
     working_directory = "runtimes",
+    toolchains = [],  # Disable Bazel's C++ toolchain to minimize flag injection
 )
 
 cmake(
@@ -54,6 +91,7 @@ cmake(
     ],
     tags = ["manual"],
     working_directory = "runtimes",
+    toolchains = [],  # Disable Bazel's C++ toolchain to minimize flag injection
 )
 
 genrule(
