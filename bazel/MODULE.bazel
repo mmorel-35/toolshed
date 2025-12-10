@@ -14,8 +14,7 @@ bazel_dep(name = "rules_shell", version = "0.6.1")
 
 bazel_lib_toolchains = use_extension("@aspect_bazel_lib//lib:extensions.bzl", "toolchains")
 bazel_lib_toolchains.jq(version = "1.7")
-bazel_lib_toolchains.yq(version = "4.25.2")
-use_repo(bazel_lib_toolchains, "jq", "jq_toolchains", "yq", "yq_toolchains")
+use_repo(bazel_lib_toolchains, "jq", "jq_toolchains")
 
 PYTHON_VERSIONS = [
     "3.9",
