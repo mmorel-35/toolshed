@@ -11,17 +11,10 @@ bazel_dep(name = "rules_perl", version = "0.4.1")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
 bazel_dep(name = "rules_python", version = "1.4.1")
 bazel_dep(name = "rules_shell", version = "0.6.1")
-bazel_dep(name = "toolchains_llvm", version = "1.4.0")
 
 bazel_lib_toolchains = use_extension("@aspect_bazel_lib//lib:extensions.bzl", "toolchains")
-bazel_lib_toolchains.jq()
-use_repo(bazel_lib_toolchains, "jq_toolchains")
-
-llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
-llvm.toolchain()
-use_repo(llvm, "llvm_toolchain")
-
-register_toolchains("@llvm_toolchain//:all")
+bazel_lib_toolchains.jq(version = "1.7")
+use_repo(bazel_lib_toolchains, "jq", "jq_toolchains")
 
 PYTHON_VERSIONS = [
     "3.9",
