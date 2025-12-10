@@ -26,17 +26,18 @@ The LLVM extension and toolchains_llvm dependency have been removed from MODULE.
 
 **Note**: If you need to build the LLVM sanitizer libraries (targets like `//compile:cxx_msan` or `//compile:cxx_tsan`), you must use WORKSPACE mode, not bzlmod mode.
 
-### JQ Toolchain Configuration
+### JQ and YQ Toolchain Configuration
 
-The JQ toolchain is configured with an explicit version to ensure consistency:
+The JQ and YQ toolchains are configured with explicit versions to ensure consistency:
 
 ```starlark
 bazel_lib_toolchains = use_extension("@aspect_bazel_lib//lib:extensions.bzl", "toolchains")
 bazel_lib_toolchains.jq(version = "1.7")
-use_repo(bazel_lib_toolchains, "jq", "jq_toolchains")
+bazel_lib_toolchains.yq(version = "4.25.2")
+use_repo(bazel_lib_toolchains, "jq", "jq_toolchains", "yq", "yq_toolchains")
 ```
 
-This aligns with the aspect_bazel_lib version used in WORKSPACE mode (2.16.0).
+These versions are the defaults provided by aspect_bazel_lib version 2.16.0.
 
 ## Using envoy_toolshed as a Dependency
 
@@ -144,6 +145,7 @@ bazel build //target --noenable_bzlmod
 
 - All Python-based tools and targets
 - JQ-based utilities
+- YQ-based utilities
 - Format checking tools
 - Dependency management tools
 - Autotools building (m4, autoconf, automake, libtool)
