@@ -37,7 +37,7 @@ bazel_lib_toolchains.yq(version = "4.25.2")
 use_repo(bazel_lib_toolchains, "jq", "jq_toolchains", "yq", "yq_toolchains")
 ```
 
-These versions are the defaults provided by aspect_bazel_lib version 2.16.0.
+JQ version 1.7 and YQ version 4.25.2 are the default versions provided by aspect_bazel_lib 2.16.0.
 
 ## Using envoy_toolshed as a Dependency
 
@@ -183,7 +183,7 @@ If you're migrating your own project from using envoy_toolshed in WORKSPACE mode
 
 ## Known Limitations
 
-1. **LLVM toolchain unavailable in bzlmod mode**: The LLVM toolchain is only configured in WORKSPACE mode. If you need C/C++ compilation with specific toolchain features, you must use WORKSPACE mode or configure the LLVM toolchain yourself in your root MODULE.bazel.
+1. **LLVM toolchain extension limitation**: The LLVM toolchain extension can only be used by root modules in bzlmod mode, so it's not available when using envoy_toolshed as a dependency. For C/C++ compilation with LLVM toolchain features, either use WORKSPACE mode or configure the LLVM toolchain in your root MODULE.bazel.
 
 2. **Strip prefix required**: When using git_override or archive_override, you must specify `strip_prefix = "bazel"` because the MODULE.bazel is in a subdirectory.
 
