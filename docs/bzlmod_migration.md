@@ -26,6 +26,33 @@ The LLVM extension and toolchains_llvm dependency have been removed from MODULE.
 
 **Note**: If you need to build the LLVM sanitizer libraries (targets like `//compile:cxx_msan` or `//compile:cxx_tsan`), you must use WORKSPACE mode, not bzlmod mode.
 
+### Understanding Extension dev_dependency
+
+When envoy_toolshed was integrated into the Envoy bzlmod migration, Envoy uses a pattern where the LLVM extension is marked as a development dependency:
+
+```starlark
+# In Envoy's MODULE.bazel
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+llvm.toolchain(
+    name = "llvm_toolchain",
+    llvm_version = "18.1.8",
+    cxx_standard = {"": "c++20"},
+)
+use_repo(llvm, "llvm_toolchain", "llvm_toolchain_llvm")
+```
+
+This `dev_dependency = True` on the extension means:
+- The LLVM toolchain is only configured when Envoy is the root module
+- When Envoy is used as a transitive dependency, the extension is not loaded
+- This prevents extension conflicts and allows consuming projects to configure their own toolchains
+
+This is different from marking a `bazel_dep` as a dev dependency. Extension dev dependencies allow:
+- Root modules to use extensions that would otherwise conflict
+- Better composability when modules are used as dependencies
+- Flexibility for consumers to configure their own toolchain versions
+
+For more details on Envoy's bzlmod migration and the dev_dependency pattern, see the [Envoy bzlmod migration documentation](https://github.com/mmorel-35/envoy/blob/bzlmod-migration/docs/bzlmod_migration.md).
+
 ### JQ Toolchain Configuration
 
 The JQ toolchain is configured with an explicit version to ensure consistency:
@@ -181,7 +208,7 @@ If you're migrating your own project from using envoy_toolshed in WORKSPACE mode
 
 ## Known Limitations
 
-1. **LLVM toolchain extension limitation**: The LLVM toolchain extension can only be used by root modules in bzlmod mode, so it's not available when using envoy_toolshed as a dependency. For C/C++ compilation with LLVM toolchain features, either use WORKSPACE mode or configure the LLVM toolchain in your root MODULE.bazel.
+1. **LLVM toolchain extension limitation**: The LLVM toolchain extension can only be used by root modules in bzlmod mode, so it's not available when using envoy_toolshed as a dependency. For C/C++ compilation with LLVM toolchain features, either use WORKSPACE mode or configure the LLVM toolchain in your root MODULE.bazel. Note that Envoy addresses this by marking its LLVM extension as `dev_dependency = True`, which only loads the extension when Envoy is the root module.
 
 2. **Strip prefix required**: When using git_override or archive_override, you must specify `strip_prefix = "bazel"` because the MODULE.bazel is in a subdirectory.
 
@@ -197,7 +224,7 @@ If you're migrating your own project from using envoy_toolshed in WORKSPACE mode
 
 - [Bazel bzlmod documentation](https://bazel.build/external/module)
 - [Module extensions documentation](https://bazel.build/external/extension)
-- [Envoy bzlmod migration document](https://github.com/mmorel-35/envoy/blob/copilot/document-bzlmod-migration/docs/bzlmod_migration.md)
+- [Envoy bzlmod migration document](https://github.com/mmorel-35/envoy/blob/bzlmod-migration/docs/bzlmod_migration.md)
 - [Bazel Central Registry](https://registry.bazel.build/)
 
 ## Support
