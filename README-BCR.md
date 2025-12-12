@@ -42,7 +42,7 @@ Create a Classic Personal Access Token with the following permissions:
 - `workflow`: Required to open pull requests against the BCR
 
 > [!NOTE]
-> Fine-grained Personal Access Tokens (PATs) are not fully supported yet because they cannot open pull requests against public repositories. This is tracked in GitHub's roadmap: https://github.com/github/roadmap/issues/600
+> Fine-grained Personal Access Tokens (PATs) are not fully supported because they cannot open pull requests against public repositories. If this limitation is resolved in the future, fine-grained PATs may become an option. For now, use Classic PATs.
 
 ### 3. Add the Token as a Repository Secret
 
@@ -267,7 +267,10 @@ The workflow generates attestations for enhanced security and supply chain verif
 Attestations are uploaded to the GitHub Release and referenced in the BCR entry via `attestations.json`.
 
 > [!NOTE]
-> Attestations require that releases are created properly. If you encounter attestation issues, ensure the release exists and the tag is correct.
+> Attestations require that releases are published (not in draft state) and that the release tag exists in the repository. If you encounter attestation issues, verify that:
+> - The release is marked as "Published" (not "Draft")
+> - The tag exists in the repository (`git tag -l`)
+> - The source archive is available at the expected URL
 
 ## References
 

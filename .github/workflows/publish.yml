@@ -6,7 +6,7 @@ name: Publish to BCR
 # using the templates defined in the .bcr directory.
 
 on:
-  # Triggered when a release is published
+  # Triggered when a release is published with a tag matching 'bazel-v*' pattern
   release:
     types:
     - published
@@ -19,38 +19,12 @@ on:
         description: "The git tag identifying the release to publish (e.g., bazel-v0.3.11)"
 
 jobs:
-  # Only run if this is a bazel-specific release tag
-  check-tag:
-    runs-on: ubuntu-latest
-    outputs:
-      should_publish: ${{ steps.check.outputs.should_publish }}
-      tag_name: ${{ steps.check.outputs.tag_name }}
-    steps:
-    - name: Check if tag should be published
-      id: check
-      run: |
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-          TAG_NAME="${{ inputs.tag_name }}"
-        else
-          TAG_NAME="${{ github.event.release.tag_name }}"
-        fi
-
-        echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-
-        if [[ "${TAG_NAME}" == bazel-v* ]]; then
-          echo "should_publish=true" >> $GITHUB_OUTPUT
-          echo "✓ Tag ${TAG_NAME} matches pattern 'bazel-v*' - will publish to BCR"
-        else
-          echo "should_publish=false" >> $GITHUB_OUTPUT
-          echo "✗ Tag ${TAG_NAME} does not match pattern 'bazel-v*' - skipping BCR publish"
-        fi
-
   publish:
-    needs: check-tag
-    if: needs.check-tag.outputs.should_publish == 'true'
+    # Only run for releases with tags matching 'bazel-v*' pattern (e.g., bazel-v0.3.10, bazel-v1.2.3)
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'bazel-v')
     uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v6
     with:
-      tag_name: ${{ needs.check-tag.outputs.tag_name }}
+      tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
       # The BCR fork must be created manually - see README-BCR.md for setup instructions
       # This should be a fork of bazelbuild/bazel-central-registry in the envoyproxy organization
       registry_fork: envoyproxy/bazel-central-registry
