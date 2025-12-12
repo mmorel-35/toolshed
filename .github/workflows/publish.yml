@@ -25,7 +25,7 @@ jobs:
     uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v6
     with:
       tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
-      # The BCR fork must be created manually - see README-BCR.md for setup instructions
+      # The BCR fork must be created manually - see .bcr/README.md for setup instructions
       # This should be a fork of bazelbuild/bazel-central-registry in the envoyproxy organization
       registry_fork: envoyproxy/bazel-central-registry
       # Open the PR directly to the upstream BCR
@@ -42,5 +42,5 @@ jobs:
       attestations: write  # Needed to publish attestations
     secrets:
       # This PAT must be created and added as a repository secret
-      # See README-BCR.md for instructions on creating the token
+      # See .bcr/README.md for instructions on creating the token
       publish_token: ${{ secrets.BCR_PUBLISH_TOKEN }}
