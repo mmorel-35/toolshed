@@ -1,5 +1,27 @@
 version: 2
 updates:
+# Bazel
+- package-ecosystem: bazel
+  directories:
+  - /bazel
+  schedule:
+    interval: daily
+  groups:
+    dependencies:
+      patterns:
+      - "*"
+
+# Rust (Cargo)
+- package-ecosystem: cargo
+  directories:
+  - /rust
+  schedule:
+    interval: daily
+  groups:
+    dependencies:
+      patterns:
+      - "*"
+
 # GitHub Actions
 - package-ecosystem: github-actions
   directories:
@@ -37,45 +59,6 @@ updates:
       patterns:
       - "*"
 
-# Python (pip)
-- package-ecosystem: pip
-  directories:
-  - /gh-actions/gcp/setup
-  - /bazel
-  - /bazel/website
-  - /deps
-  - /deps/flake8
-  - /deps/mypy
-  - /deps/pytest
-  schedule:
-    interval: daily
-  groups:
-    dependencies:
-      patterns:
-      - "*"
-
-# Bazel
-- package-ecosystem: bazel
-  directories:
-  - /bazel
-  schedule:
-    interval: daily
-  groups:
-    dependencies:
-      patterns:
-      - "*"
-
-# Rust (Cargo)
-- package-ecosystem: cargo
-  directories:
-  - /rust
-  schedule:
-    interval: daily
-  groups:
-    dependencies:
-      patterns:
-      - "*"
-
 # npm
 - package-ecosystem: npm
   directories:
@@ -88,6 +71,23 @@ updates:
   - /gh-actions/jq
   - /gh-actions/retest
   - /gh-actions/torun
+  schedule:
+    interval: daily
+  groups:
+    dependencies:
+      patterns:
+      - "*"
+
+# Python (pip)
+- package-ecosystem: pip
+  directories:
+  - /bazel
+  - /bazel/website
+  - /deps
+  - /deps/flake8
+  - /deps/mypy
+  - /deps/pytest
+  - /gh-actions/gcp/setup
   schedule:
     interval: daily
   groups:
