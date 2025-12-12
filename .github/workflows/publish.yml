@@ -9,7 +9,7 @@ on:
   # Triggered when a release is published
   release:
     types:
-      - published
+    - published
   # Allow manual trigger for republishing or testing
   workflow_dispatch:
     inputs:
@@ -26,24 +26,24 @@ jobs:
       should_publish: ${{ steps.check.outputs.should_publish }}
       tag_name: ${{ steps.check.outputs.tag_name }}
     steps:
-      - name: Check if tag should be published
-        id: check
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            TAG_NAME="${{ inputs.tag_name }}"
-          else
-            TAG_NAME="${{ github.event.release.tag_name }}"
-          fi
-          
-          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-          
-          if [[ "${TAG_NAME}" == bazel-v* ]]; then
-            echo "should_publish=true" >> $GITHUB_OUTPUT
-            echo "✓ Tag ${TAG_NAME} matches pattern 'bazel-v*' - will publish to BCR"
-          else
-            echo "should_publish=false" >> $GITHUB_OUTPUT
-            echo "✗ Tag ${TAG_NAME} does not match pattern 'bazel-v*' - skipping BCR publish"
-          fi
+    - name: Check if tag should be published
+      id: check
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          TAG_NAME="${{ inputs.tag_name }}"
+        else
+          TAG_NAME="${{ github.event.release.tag_name }}"
+        fi
+
+        echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+
+        if [[ "${TAG_NAME}" == bazel-v* ]]; then
+          echo "should_publish=true" >> $GITHUB_OUTPUT
+          echo "✓ Tag ${TAG_NAME} matches pattern 'bazel-v*' - will publish to BCR"
+        else
+          echo "should_publish=false" >> $GITHUB_OUTPUT
+          echo "✗ Tag ${TAG_NAME} does not match pattern 'bazel-v*' - skipping BCR publish"
+        fi
 
   publish:
     needs: check-tag
@@ -63,9 +63,9 @@ jobs:
       # Enable attestations for enhanced security
       attest: true
     permissions:
-      contents: write    # Needed to upload attestation files to the release
-      id-token: write    # Needed to generate attestations
-      attestations: write # Needed to publish attestations
+      contents: write     # Needed to upload attestation files to the release
+      id-token: write     # Needed to generate attestations
+      attestations: write  # Needed to publish attestations
     secrets:
       # This PAT must be created and added as a repository secret
       # See README-BCR.md for instructions on creating the token
