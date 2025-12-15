@@ -1,1 +1,2 @@
-common --noenable_bzlmod
+# Enable bzlmod for Bazel 8+ compatibility
+# WORKSPACE is still used when present for backward compatibility

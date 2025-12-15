@@ -1,4 +1,6 @@
 load("@aspect_bazel_lib//lib:jq.bzl", "jq")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 exports_files([
     "parse_clang_tidy.jq",
@@ -23,5 +25,8 @@ sh_test(
         "parse_clang_tidy.jq",
         "parse_clang_tidy.sh",
         "@jq_toolchains//:resolved_toolchain",
-    ] + glob(["tests/*.txt", "tests/*.json"]),
+    ] + glob([
+        "tests/*.txt",
+        "tests/*.json",
+    ]),
 )
