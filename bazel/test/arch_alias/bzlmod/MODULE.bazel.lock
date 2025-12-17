@@ -180,7 +180,7 @@
     "@@envoy_toolshed+//repository:utils.bzl%arch_alias_ext": {
       "general": {
         "bzlTransitiveDigest": "C7s2Fvyxlkp5c8n0KI2/lWYpeu/I4C0I3z/ZaOG8ALI=",
-        "usagesDigest": "RFayn1uoZSoulwQxxXmfIepJ3qvGbLUOESbMl/SsrEU=",
+        "usagesDigest": "P+LayNLtt1s3UewscEIKXbdRZPnUhfQy2hV3WE4sX84=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},

@@ -2,12 +2,10 @@
 
 This test module validates the arch_alias bzlmod extension functionality
 and serves as a BCR presubmit test.
-"""
 
-module(
-    name = "envoy_toolshed_test",
-    version = "0.0.0",
-)
+Note: This test module does not declare module() as it is not intended
+to be published to BCR, only used for testing.
+"""
 
 # Use the parent module (envoy_toolshed) for testing
 bazel_dep(name = "envoy_toolshed", version = "")
