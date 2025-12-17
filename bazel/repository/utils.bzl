@@ -64,10 +64,16 @@ def _arch_alias_impl(ctx):
             arch = arch,
             supported = ctx.attr.aliases.keys(),
         ))
+    
+    # In bzlmod, ctx.name includes the canonical name (e.g., "module~~ext~name")
+    # We want to use the apparent name for the alias target
+    # Extract the simple name from the canonical name (everything after the last ~)
+    alias_name = ctx.attr.alias_name if hasattr(ctx.attr, "alias_name") and ctx.attr.alias_name else ctx.name.split("~")[-1]
+    
     ctx.file(
         "BUILD.bazel",
         ALIAS_BUILD.format(
-            name = ctx.name,
+            name = alias_name,
             actual = actual,
         ),
     )
@@ -77,6 +83,10 @@ arch_alias = repository_rule(
     attrs = {
         "aliases": attr.string_dict(
             doc = "A dictionary of arch strings, mapped to associated aliases",
+        ),
+        "alias_name": attr.string(
+            doc = "Optional override for the alias target name (useful in bzlmod)",
+            default = "",
         ),
     },
 )
@@ -106,6 +116,7 @@ def _arch_alias_extension_impl(module_ctx):
             arch_alias(
                 name = alias_tag.name,
                 aliases = alias_tag.aliases,
+                alias_name = alias_tag.name,
             )
 
 arch_alias_ext = module_extension(
