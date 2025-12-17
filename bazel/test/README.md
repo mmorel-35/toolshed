@@ -6,27 +6,28 @@ This directory contains comprehensive tests for the `arch_alias` functionality i
 
 ```
 test/
-├── bzlmod_test/      # Tests for bzlmod mode (MODULE.bazel)
-│   ├── MODULE.bazel  # Bzlmod test module configuration
-│   ├── BUILD.bazel   # Test targets
-│   └── .bazelrc      # Test configuration
-├── workspace_test/   # Tests for WORKSPACE mode (legacy)
-│   ├── WORKSPACE     # WORKSPACE test configuration
-│   ├── BUILD.bazel   # Test targets
-│   └── .bazelrc      # Test configuration
-└── README.md         # This file
+└── arch_alias/       # Tests for arch_alias functionality
+    ├── bzlmod/       # Tests for bzlmod mode (MODULE.bazel)
+    │   ├── MODULE.bazel  # Bzlmod test module configuration
+    │   ├── BUILD.bazel   # Test targets
+    │   └── .bazelrc      # Test configuration
+    ├── workspace/    # Tests for WORKSPACE mode (legacy)
+    │   ├── WORKSPACE     # WORKSPACE test configuration
+    │   ├── BUILD.bazel   # Test targets
+    │   └── .bazelrc      # Test configuration
+    └── README.md     # This file
 ```
 
 ## Purpose
 
 These tests validate:
-1. **Bzlmod Mode** (`bzlmod_test/`):
+1. **Bzlmod Mode** (`arch_alias/bzlmod/`):
    - The `arch_alias_ext` module extension works correctly
    - Multiple arch aliases can be created in the same module
    - The aliases resolve to correct platform targets based on host architecture
    - Integration with BCR presubmit checks
 
-2. **WORKSPACE Mode** (`workspace_test/`):
+2. **WORKSPACE Mode** (`arch_alias/workspace/`):
    - The `arch_alias` repository rule works correctly
    - Backward compatibility with existing WORKSPACE-based configurations
    - Multiple aliases can coexist in the same workspace
@@ -36,7 +37,7 @@ These tests validate:
 ### Test Bzlmod Mode
 
 ```bash
-cd bazel/test/bzlmod_test
+cd bazel/test/arch_alias/bzlmod
 bazel build //...
 bazel test //...
 ```
@@ -44,7 +45,7 @@ bazel test //...
 ### Test WORKSPACE Mode
 
 ```bash
-cd bazel/test/workspace_test
+cd bazel/test/arch_alias/workspace
 bazel build //...
 bazel test //...
 ```

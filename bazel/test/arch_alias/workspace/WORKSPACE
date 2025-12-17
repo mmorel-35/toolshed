@@ -8,7 +8,7 @@ workspace(name = "envoy_toolshed_workspace_test")
 
 local_repository(
     name = "envoy_toolshed",
-    path = "../..",
+    path = "../../..",
 )
 
 load("@envoy_toolshed//repository:utils.bzl", "arch_alias")
