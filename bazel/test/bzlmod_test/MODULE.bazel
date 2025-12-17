@@ -13,7 +13,7 @@ module(
 bazel_dep(name = "envoy_toolshed", version = "")
 local_path_override(
     module_name = "envoy_toolshed",
-    path = "..",
+    path = "../..",
 )
 
 # Required dependency for test targets

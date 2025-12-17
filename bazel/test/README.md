@@ -1,61 +1,84 @@
-# arch_alias Extension Test Module
+# arch_alias Tests
 
-This directory contains a BCR-compatible test module for the `arch_alias` bzlmod extension.
+This directory contains comprehensive tests for the `arch_alias` functionality in both WORKSPACE and bzlmod modes.
+
+## Directory Structure
+
+```
+test/
+├── bzlmod_test/      # Tests for bzlmod mode (MODULE.bazel)
+│   ├── MODULE.bazel  # Bzlmod test module configuration
+│   ├── BUILD.bazel   # Test targets
+│   └── .bazelrc      # Test configuration
+├── workspace_test/   # Tests for WORKSPACE mode (legacy)
+│   ├── WORKSPACE     # WORKSPACE test configuration
+│   ├── BUILD.bazel   # Test targets
+│   └── .bazelrc      # Test configuration
+└── README.md         # This file
+```
 
 ## Purpose
 
-This test module validates:
-1. The `arch_alias_ext` module extension works correctly in bzlmod mode
-2. Multiple arch aliases can be created in the same module
-3. The aliases resolve to the correct platform targets based on host architecture
-4. The aliases can be used in `.bazelrc` configurations
+These tests validate:
+1. **Bzlmod Mode** (`bzlmod_test/`):
+   - The `arch_alias_ext` module extension works correctly
+   - Multiple arch aliases can be created in the same module
+   - The aliases resolve to correct platform targets based on host architecture
+   - Integration with BCR presubmit checks
 
-## Usage
+2. **WORKSPACE Mode** (`workspace_test/`):
+   - The `arch_alias` repository rule works correctly
+   - Backward compatibility with existing WORKSPACE-based configurations
+   - Multiple aliases can coexist in the same workspace
 
-### Running Tests Locally
+## Running Tests
 
-From this directory:
+### Test Bzlmod Mode
 
 ```bash
+cd bazel/test/bzlmod_test
 bazel build //...
 bazel test //...
 ```
 
-### BCR Presubmit
+### Test WORKSPACE Mode
 
-This test module is automatically run during BCR presubmit checks. It validates that the module works correctly across different:
-- Operating systems (Linux, macOS)
-- Architectures (amd64, aarch64)
-- Bazel versions (7.x, 8.x, 9.x)
+```bash
+cd bazel/test/workspace_test
+bazel build //...
+bazel test //...
+```
 
-## Test Structure
+### Verify Platform Aliases
 
-### MODULE.bazel
-Defines the test module and configures the `arch_alias_ext` extension with test aliases:
-- `test_platform` - Generic platform alias for basic functionality
-- `test_clang_platform` - Secondary alias to test multiple repositories
+You can inspect the created aliases:
 
-### BUILD.bazel
-Contains simple build targets that exercise the platform aliases through the build configuration.
+```bash
+# In bzlmod_test or workspace_test directory
+bazel query @test_platform//...
+bazel query @test_clang_platform//...
+```
 
-### .bazelrc
-Configures the build to use `@test_platform` as the `--host_platform`, validating that:
-1. The alias repository is created successfully
-2. The alias resolves to a valid platform target
-3. Bazel can use the platform for build configurations
+## BCR Integration
 
-## Architecture Support
+The `bzlmod_test/` follows BCR best practices and is suitable for BCR presubmit testing:
+- Located in the standard `test/` directory structure
+- Uses `local_path_override` to test the parent module
+- Can be run independently or as part of CI/CD
+- Tests both single and multiple alias scenarios
 
-The test covers common architecture strings:
+## Architecture Coverage
+
+Both tests cover common architecture identifiers:
 - `amd64` / `x86_64` - Intel/AMD 64-bit
 - `aarch64` / `arm64` - ARM 64-bit
 
-All architectures in the test map to `@platforms//host` or `@platforms//os:linux` for simplicity.
+The aliases map to platform targets from `@platforms` for validation.
 
-## Integration with BCR
+## What Gets Tested
 
-This test module follows BCR best practices:
-1. Located in `bazel/test/` relative to the module root
-2. Uses `local_path_override` to test the parent module
-3. Can be run independently or as part of BCR presubmit
-4. Tests the module's public API (the `arch_alias_ext` extension)
+1. **Repository Creation**: Aliases create proper external repositories
+2. **Platform Resolution**: Aliases resolve to correct platform targets based on host arch
+3. **Build Configuration**: Aliases work correctly in `.bazelrc` with `--host_platform`
+4. **Multiple Aliases**: Multiple aliases can coexist and work independently
+5. **API Compatibility**: Both WORKSPACE and bzlmod APIs function correctly
