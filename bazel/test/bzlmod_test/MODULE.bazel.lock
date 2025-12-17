@@ -179,7 +179,7 @@
   "moduleExtensions": {
     "@@envoy_toolshed+//repository:utils.bzl%arch_alias_ext": {
       "general": {
-        "bzlTransitiveDigest": "M5dmHDN38ciXOE6I7CZpsPU+uPVyNeLR1RPqP3Iiqb8=",
+        "bzlTransitiveDigest": "dgQZvkRhZlZqcDD4XB2hs/4YBcjADlbrQz+/Lo2hWbQ=",
         "usagesDigest": "RFayn1uoZSoulwQxxXmfIepJ3qvGbLUOESbMl/SsrEU=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

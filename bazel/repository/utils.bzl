@@ -56,6 +56,30 @@ alias(
 )
 """
 
+def _get_alias_name(ctx):
+    """Extract the appropriate alias name from the repository context.
+    
+    In bzlmod, repository names include the canonical name 
+    (e.g., "module~~ext~name"), but we want the alias target to use 
+    just the apparent name (e.g., "name"). In WORKSPACE mode, the 
+    repository name is already the apparent name.
+    
+    Args:
+        ctx: The repository rule context
+        
+    Returns:
+        The apparent name to use for the alias target
+    """
+    if ctx.attr.alias_name:
+        # Explicit override takes precedence
+        return ctx.attr.alias_name
+    
+    # In WORKSPACE mode, ctx.name is already the apparent name
+    # In bzlmod, ctx.name is canonical, so extract the last component
+    if "~" in ctx.name:
+        return ctx.name.split("~")[-1]
+    return ctx.name
+
 def _arch_alias_impl(ctx):
     arch = ctx.os.arch
     actual = ctx.attr.aliases.get(arch)
@@ -65,10 +89,7 @@ def _arch_alias_impl(ctx):
             supported = ctx.attr.aliases.keys(),
         ))
     
-    # In bzlmod, ctx.name includes the canonical name (e.g., "module~~ext~name")
-    # We want to use the apparent name for the alias target
-    # Extract the simple name from the canonical name (everything after the last ~)
-    alias_name = ctx.attr.alias_name if hasattr(ctx.attr, "alias_name") and ctx.attr.alias_name else ctx.name.split("~")[-1]
+    alias_name = _get_alias_name(ctx)
     
     ctx.file(
         "BUILD.bazel",
@@ -110,9 +131,18 @@ def _arch_alias_extension_impl(module_ctx):
     
     This allows arch_alias to be used with bzlmod by creating repositories
     based on the tags defined in MODULE.bazel files.
+    
+    The alias_name parameter is explicitly set to ensure the BUILD file
+    target uses the intended apparent name (from the tag), rather than
+    the canonical repository name that bzlmod generates internally.
+    
+    Args:
+        module_ctx: The module extension context
     """
     for mod in module_ctx.modules:
         for alias_tag in mod.tags.alias:
+            # Pass alias_name explicitly to ensure the target name in the
+            # generated BUILD file matches the user's expectation
             arch_alias(
                 name = alias_tag.name,
                 aliases = alias_tag.aliases,
