@@ -60,7 +60,7 @@ def _get_alias_name(ctx):
     """Extract the appropriate alias name from the repository context.
     
     In bzlmod, repository names include the canonical name 
-    (e.g., "module~~ext~name"), but we want the alias target to use 
+    (e.g., "module++ext+name"), but we want the alias target to use 
     just the apparent name (e.g., "name"). In WORKSPACE mode, the 
     repository name is already the apparent name.
     
@@ -70,14 +70,16 @@ def _get_alias_name(ctx):
     Returns:
         The apparent name to use for the alias target
     """
-    if ctx.attr.alias_name:
-        # Explicit override takes precedence
-        return ctx.attr.alias_name
-    
     # In WORKSPACE mode, ctx.name is already the apparent name
-    # In bzlmod, ctx.name is canonical, so extract the last component
-    if "~" in ctx.name:
-        return ctx.name.split("~")[-1]
+    # In bzlmod, ctx.name is canonical with ++ and + separators, so extract the last component
+    if "++" in ctx.name or "~" in ctx.name:
+        # Handle both canonical formats: module++ext+name or module~~ext~name
+        # Split by both ++ and + (or ~~ and ~) and take the last component
+        name = ctx.name.replace("++", "+").replace("~~", "~")
+        if "+" in name:
+            return name.split("+")[-1]
+        elif "~" in name:
+            return name.split("~")[-1]
     return ctx.name
 
 def _arch_alias_impl(ctx):
@@ -105,10 +107,6 @@ arch_alias = repository_rule(
         "aliases": attr.string_dict(
             doc = "A dictionary of arch strings, mapped to associated aliases",
         ),
-        "alias_name": attr.string(
-            doc = "Optional override for the alias target name (useful in bzlmod)",
-            default = "",
-        ),
     },
 )
 
@@ -132,21 +130,14 @@ def _arch_alias_extension_impl(module_ctx):
     This allows arch_alias to be used with bzlmod by creating repositories
     based on the tags defined in MODULE.bazel files.
     
-    The alias_name parameter is explicitly set to ensure the BUILD file
-    target uses the intended apparent name (from the tag), rather than
-    the canonical repository name that bzlmod generates internally.
-    
     Args:
         module_ctx: The module extension context
     """
     for mod in module_ctx.modules:
         for alias_tag in mod.tags.alias:
-            # Pass alias_name explicitly to ensure the target name in the
-            # generated BUILD file matches the user's expectation
             arch_alias(
                 name = alias_tag.name,
                 aliases = alias_tag.aliases,
-                alias_name = alias_tag.name,
             )
 
 arch_alias_ext = module_extension(

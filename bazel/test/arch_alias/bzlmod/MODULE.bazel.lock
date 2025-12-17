@@ -179,7 +179,7 @@
   "moduleExtensions": {
     "@@envoy_toolshed+//repository:utils.bzl%arch_alias_ext": {
       "general": {
-        "bzlTransitiveDigest": "dgQZvkRhZlZqcDD4XB2hs/4YBcjADlbrQz+/Lo2hWbQ=",
+        "bzlTransitiveDigest": "C7s2Fvyxlkp5c8n0KI2/lWYpeu/I4C0I3z/ZaOG8ALI=",
         "usagesDigest": "RFayn1uoZSoulwQxxXmfIepJ3qvGbLUOESbMl/SsrEU=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -193,8 +193,7 @@
                 "aarch64": "@platforms//host",
                 "x86_64": "@platforms//host",
                 "arm64": "@platforms//host"
-              },
-              "alias_name": "test_platform"
+              }
             }
           },
           "test_clang_platform": {
@@ -205,8 +204,7 @@
                 "aarch64": "@platforms//os:linux",
                 "x86_64": "@platforms//os:linux",
                 "arm64": "@platforms//os:linux"
-              },
-              "alias_name": "test_clang_platform"
+              }
             }
           }
         },
